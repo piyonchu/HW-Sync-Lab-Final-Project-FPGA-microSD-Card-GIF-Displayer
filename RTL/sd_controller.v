@@ -29,10 +29,10 @@ module sd_controller(
     output ready, // HIGH if the SD card is ready for a read or write operation.
     input [31:0] address,   // Memory address for read/write operation.
     input clk,  // 25 MHz clock.
-    output [4:0] status, // For debug purposes: Current state of controller.
-    output [15:0] fuck
+    output [4:0] status // For debug purposes: Current state of controller.
+    
 );
-    reg [15:0] fuck1 = 0;
+
     parameter RST = 0;
     parameter INIT = 1;
     parameter CMD0 = 2;
@@ -97,7 +97,7 @@ module sd_controller(
                     else begin
                         boot_counter <= boot_counter - 1;
                     end
-                    fuck1[0] <= 1;
+                    
                 end
                 INIT: begin
                     if(bit_counter == 0) begin
@@ -108,7 +108,7 @@ module sd_controller(
                         bit_counter <= bit_counter - 1;
                         sclk_sig <= ~sclk_sig;
                     end
-                    fuck1[1] <= 1;
+                    
                 end
                 CMD0: begin
                     // Format according to lecture: 01 000000 00000000 00000000 00000000 00000000 1001010 1
@@ -116,7 +116,7 @@ module sd_controller(
                     bit_counter <= 55;
                     return_state <= CMD8;  // Go to CMD8 next as per initialization flowchart
                     state <= SEND_CMD;
-                    fuck1[2] <= 1;
+                    
                 end
                 CMD8: begin
                     // Format according to lecture: 01 001000 00000000 00000000 00000001 10101010 0000111 1
@@ -124,7 +124,7 @@ module sd_controller(
                     bit_counter <= 55;
                     return_state <= CMD58;  // Check OCR register next
                     state <= SEND_CMD;
-                    fuck1[3] <= 1;
+                   
                 end
                 CMD58: begin
                     // Format according to lecture: 01 111010 00000000 00000000 00000000 00000000 0111010 1
@@ -132,7 +132,7 @@ module sd_controller(
                     bit_counter <= 55;
                     return_state <= CMD55;  // Continue with ACMD41 sequence
                     state <= SEND_CMD;
-                    fuck1[4] <= 1;
+                    
                 end
                 CMD55: begin
                     // Fixed CRC as per lecture requirements
@@ -140,7 +140,7 @@ module sd_controller(
                     bit_counter <= 55;
                     return_state <= CMD41;
                     state <= SEND_CMD;
-                    fuck1[5] <= 1;
+                    
                 end
                 CMD41: begin
                     // Fixed command format and CRC
@@ -148,7 +148,7 @@ module sd_controller(
                     bit_counter <= 55;
                     return_state <= POLL_CMD;
                     state <= SEND_CMD;
-                    fuck1[6] <= 1;
+                   
                 end
                 POLL_CMD: begin
                     if(recv_data[0] == 0) begin
@@ -157,7 +157,7 @@ module sd_controller(
                     else begin
                         state <= CMD55;  // Retry ACMD41 sequence
                     end
-                    fuck1[7] <= 1;
+                    
                 end
                 IDLE: begin
                     if(rd == 1) begin
@@ -169,14 +169,14 @@ module sd_controller(
                     else begin
                         state <= IDLE;
                     end
-                    fuck1[8] <= 1;
+                    
                 end
                 READ_BLOCK: begin
                     cmd_out <= {16'hFF_51, address, 8'hFF};
                     bit_counter <= 55;
                     return_state <= READ_BLOCK_WAIT;
                     state <= SEND_CMD;
-                    fuck1[9] <= 1;
+                    
                 end
                 READ_BLOCK_WAIT: begin
                     if(sclk_sig == 1 && miso == 0) begin
@@ -186,7 +186,7 @@ module sd_controller(
                         state <= RECEIVE_BYTE;
                     end
                     sclk_sig <= ~sclk_sig;
-                    fuck1[10] <= 1;
+                    
                 end
                 READ_BLOCK_DATA: begin
                     dout <= recv_data;
@@ -202,13 +202,13 @@ module sd_controller(
                         bit_counter <= 7;
                         state <= RECEIVE_BYTE;
                     end
-                    fuck1[11] <= 1;
+                   
                 end
                 READ_BLOCK_CRC: begin
                     bit_counter <= 7;
                     return_state <= IDLE;
                     state <= RECEIVE_BYTE;
-                    fuck1[12] <= 1;
+                    
                 end
                 SEND_CMD: begin
                     if (sclk_sig == 1) begin
@@ -221,7 +221,7 @@ module sd_controller(
                         end
                     end
                     sclk_sig <= ~sclk_sig;
-                    fuck1[13] <= 1;
+                    
                 end
                 RECEIVE_BYTE_WAIT: begin
                     if (sclk_sig == 1) begin
@@ -232,7 +232,7 @@ module sd_controller(
                         end
                     end
                     sclk_sig <= ~sclk_sig;
-                    fuck1[14] <= 1;
+                    
                 end
                 RECEIVE_BYTE: begin
                     byte_available <= 0;
@@ -246,7 +246,7 @@ module sd_controller(
                         end
                     end
                     sclk_sig <= ~sclk_sig;
-                    fuck1[15] <= 1;
+                   
                 end
                 WRITE_BLOCK_CMD: begin
                     cmd_out <= {16'hFF_58, address, 8'hFF};
@@ -317,5 +317,5 @@ module sd_controller(
     assign sclk = sclk_sig;
     assign mosi = cmd_mode ? cmd_out[55] : data_sig[7];
     assign ready = (state == IDLE);
-    assign fuck = fuck1;
+    
 endmodule
